@@ -75,8 +75,8 @@ dns:
     - https://dns.alidns.com/dns-query
 
   fallback:
-    - https://1.1.1.1/dns-query
-    - https://8.8.8.8/dns-query
+    - tls://1.1.1.1
+    - tls://8.8.8.8
 
   fallback-filter:
     geoip: true
@@ -89,7 +89,7 @@ dns:
 proxy-providers:
   lazydoge:
     type: http
-    url: "此处替换为你的订阅链接"
+    url: "你自己的实际的订阅链接"
     interval: 86400
     path: ./providers/lazydoge.yaml
     health-check:
@@ -134,11 +134,14 @@ proxy-groups:
       - 默认代理
 
 rules:
+  # 1. 局域网优先放行
   - GEOIP,LAN,DIRECT,no-resolve
 
-  - GEOSITE,CN,国内网站
-  - GEOIP,CN,国内网站
+  # 2. 🎯 Telegram 必须放最前（抢在国内 CN 规则之前！）
+  - GEOSITE,telegram,Telegram
+  - GEOIP,telegram,Telegram
 
+  # 3. 🎯 OpenAI 专属规则紧随其后
   - DOMAIN-SUFFIX,openai.com,OpenAI
   - DOMAIN-SUFFIX,api.openai.com,OpenAI
   - DOMAIN-SUFFIX,chatgpt.com,OpenAI
@@ -146,7 +149,9 @@ rules:
   - DOMAIN-SUFFIX,oaiusercontent.com,OpenAI
   - DOMAIN-KEYWORD,openai,OpenAI
 
-  - GEOSITE,telegram,Telegram
-  - GEOIP,telegram,Telegram
+  # 4. ❗ CN 规则必须放到最后做国内流量兜底
+  - GEOSITE,CN,国内网站
+  - GEOIP,CN,国内网站
 
+  # 5. 漏网之鱼走默认代理
   - MATCH,默认代理
