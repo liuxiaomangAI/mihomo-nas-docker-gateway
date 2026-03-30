@@ -1,0 +1,11 @@
+services:
+  mihomo:
+    image: metacubex/mihomo:latest
+    container_name: mihomo
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - /vol1/1000/Docker/mihomo:/root/.config/mihomo

@@ -1,0 +1,152 @@
+mixed-port: 7890
+allow-lan: true
+bind-address: "*"
+mode: rule
+log-level: info
+ipv6: false
+tcp-concurrent: true
+unified-delay: true
+
+external-controller: 0.0.0.0:9090
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+geodata-mode: true
+
+# 🔥 自动更新 Geo（加在这里）
+geo-auto-update: true
+geo-update-interval: 24
+
+# 🔥 Geo 数据源（必须和自动更新一起）
+geox-url:
+  geoip: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat"
+  geosite: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+  mmdb: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb"
+  asn: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
+
+sniffer:
+  enable: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  skip-domain:
+    - "Mijia Cloud"
+    - "+.push.apple.com"
+
+tun:
+  enable: true
+  stack: mixed
+  dns-hijack:
+    - "any:53"
+    - "tcp://any:53"
+  auto-route: true
+  auto-redirect: true
+  auto-detect-interface: true
+  strict-route: true
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  use-hosts: true
+  use-system-hosts: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "+.lan"
+    - "+.local"
+    - "localhost"
+    - "+.home.arpa"
+    - "localhost.ptlogin2.qq.com"
+
+  default-nameserver:
+    - tls://223.5.5.5
+    - tls://223.6.6.6
+
+  nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+
+  proxy-server-nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+
+proxy-providers:
+  lazydoge:
+    type: http
+    url: "此处替换为你的订阅链接"
+    interval: 86400
+    path: ./providers/lazydoge.yaml
+    health-check:
+      enable: true
+      url: "https://www.gstatic.com/generate_204"
+      interval: 300
+
+
+proxy-groups:
+  - name: 全部节点
+    type: select
+    include-all: true
+    exclude-type: direct
+
+  - name: 日本节点
+    type: select
+    include-all: true
+    exclude-type: direct
+    filter: "(?i)日|jp|japan|tokyo|osaka|东京|大阪"
+
+  - name: OpenAI
+    type: select
+    proxies:
+      - 日本节点
+
+  - name: Telegram
+    type: select
+    proxies:
+      - 日本节点
+
+  - name: 默认代理
+    type: select
+    proxies:
+      - 日本节点
+      - 全部节点
+      - DIRECT
+
+  - name: 国内网站
+    type: select
+    proxies:
+      - DIRECT
+      - 默认代理
+
+rules:
+  - GEOIP,LAN,DIRECT,no-resolve
+
+  - GEOSITE,CN,国内网站
+  - GEOIP,CN,国内网站
+
+  - DOMAIN-SUFFIX,openai.com,OpenAI
+  - DOMAIN-SUFFIX,api.openai.com,OpenAI
+  - DOMAIN-SUFFIX,chatgpt.com,OpenAI
+  - DOMAIN-SUFFIX,oaistatic.com,OpenAI
+  - DOMAIN-SUFFIX,oaiusercontent.com,OpenAI
+  - DOMAIN-KEYWORD,openai,OpenAI
+
+  - GEOSITE,telegram,Telegram
+  - GEOIP,telegram,Telegram
+
+  - MATCH,默认代理
